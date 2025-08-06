@@ -180,11 +180,117 @@ export const getDirectChatMessages = async (currentUserId: string, friendId: str
     }
 }
 
-//ideas is to get list of people to in chat app accept user's friends
-// export const getAllUsers = async () => {
-//     try {
+//ideas is to get list of people to in chat app accept user's not friends
+//app currentUserId in action in dashboard
+// ...existing code...
+//ideas is to get list of people to in chat app accept user's not friends
+//app currentUserId in action in dashboard
+export const getAllUsers = async (currentUserId: string) => {
+    try {
+        // First get all friend IDs of the current user
+        const friendships = await prisma.friendship.findMany({
+            where: {
+                AND: [
+                    {
+                        OR: [
+                            { senderId: currentUserId },
+                            { receiverId: currentUserId }
+                        ]
+                    },
+                    { status: "ACCEPTED" }
+                ]
+            },
+            select: {
+                senderId: true,
+                receiverId: true
+            }
+        });
 
-//     } catch (error) {
+        // Extract friend IDs
+        const friendIds = friendships.map(friendship =>
+            friendship.senderId === currentUserId ? friendship.receiverId : friendship.senderId
+        );
 
-//     }
-// }
+        const users = await prisma.user.findMany({
+            where: {
+                NOT: {
+                    OR: [
+                        { id: currentUserId }, // Exclude current user
+                        { id: { in: friendIds } } // Exclude existing friends
+                    ]
+                }
+            },
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                createdAt: true
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        })
+
+        return users;
+    } catch (error) {
+        console.log("got an error while fetching all the users", error)
+        throw error;
+    }
+}
+
+export async function sendFriendRequest(senderId: string, receiverId: string) {
+    try {
+        const existingFriendship = await prisma.friendship.findFirst({
+            where: {
+                OR: [
+                    { senderId, receiverId },
+                    { senderId: receiverId, receiverId: senderId }
+                ]
+            }
+        })
+
+        if (existingFriendship) throw new Error("Friendship request already exist")
+
+        return await prisma.friendship.create({
+            data: {
+                senderId,
+                receiverId,
+                status: "PENDING"
+            }, include: {
+                receiver: {
+                    select: {
+                        id: true,
+                        username: true,
+                        name: true
+                    }
+                }
+            }
+        })
+    } catch (error) {
+        console.log("Error sending friend request", error)
+        throw error
+    }
+}
+
+export async function acceptFriendRequest() {
+    try {
+
+    } catch (error) {
+
+    }
+}
+export async function rejectFriendRequest() {
+    try {
+
+    } catch (error) {
+
+    }
+}
+export async function getPendingFriendRequest() {
+    try {
+
+    } catch (error) {
+
+    }
+}
+

@@ -1,4 +1,4 @@
--- CreateEnum
+git push origin main-- CreateEnum
 CREATE TYPE "FriendshipStatus" AS ENUM ('PENDING', 'ACCEPTED', 'BLOCKED', 'DECLINED');
 
 -- CreateTable

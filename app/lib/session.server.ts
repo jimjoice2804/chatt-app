@@ -31,9 +31,11 @@ export async function getUserSession(request: Request) {
 }
 
 //this is to get the userId in session 
-export async function getUserId(request: Request): Promise<string | undefined> {
+export async function getUserId(request: Request): Promise<string | null> {
     const session = await getUserSession(request)
-    return session.get("userId")
+    const userId = session.get("userId")
+    if (!userId || typeof userId !== "string") return null
+    return userId
 }
 
 //checking each route for verification
@@ -56,8 +58,13 @@ export async function getUser(request: Request) {
     const userId = await getUserId(request);
     if (!userId) return null
 
-    const { getUserById } = await import("~/lib/db.server")
-    return getUserById(userId)
+
+    try {
+        const { getUserById } = await import("~/lib/db.server")
+        return getUserById(userId)
+    } catch (error) {
+        throw await logout(request)
+    }
 }
 
 //normal logout
