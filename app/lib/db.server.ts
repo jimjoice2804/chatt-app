@@ -20,7 +20,7 @@ export const createUser = async (data: z.infer<typeof signupUserInputs>) => {
                 username: username
             }
         })
-        if (emailExist && usernameExist) {
+        if (emailExist || usernameExist) {
             throw new Error("Email or username already exist")
         }
         const hashedPassword = await bcrypt.hash(password, 10)
@@ -272,25 +272,146 @@ export async function sendFriendRequest(senderId: string, receiverId: string) {
     }
 }
 
-export async function acceptFriendRequest() {
+export async function acceptFriendRequest(currentUserId: string, friendshipId: string) {
     try {
+        const existingFriendRequest = await prisma.friendship.findUnique({
+            where: {
+                id: friendshipId
+            },
+            include: {
+                sender: {
+                    select: {
+                        name: true,
+                        id: true,
+                        username: true
+                    }
+                }
+            }
+        })
 
+        if (!existingFriendRequest) throw new Error("No friend request sent to current user")
+
+        if (existingFriendRequest.receiverId !== currentUserId) {
+            throw new Error("You don't have permission to accept this request")
+        }
+
+        if (existingFriendRequest.status !== "PENDING") {
+            throw new Error(`Friend request is already ${existingFriendRequest.status}`)
+        }
+
+        const updatedFriendship = await prisma.friendship.update({
+            where: {
+                id: friendshipId
+            },
+            data: {
+                status: "ACCEPTED"
+            },
+            include: {
+                sender: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true
+                    }
+                },
+                receiver: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true
+                    }
+                }
+            }
+        })
+
+        return updatedFriendship;
     } catch (error) {
-
+        console.log("Error Accepting friend request", error)
+        throw error
     }
 }
-export async function rejectFriendRequest() {
+export async function rejectFriendRequest(currentUserId: string, friendshipId: string) {
     try {
+        if (!currentUserId || !friendshipId) throw new Error("No parameter found")
+        const existFriendRequest = await prisma.friendship.findUnique({
+            where: {
+                id: friendshipId
+            },
+            include: {
+                sender: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true
+                    }
+                }
+            },
+        })
 
+        if (!existFriendRequest) throw new Error("Friend request not found")
+
+        if (existFriendRequest.receiverId !== currentUserId) {
+            throw new Error("You don't have permission to reject this request")
+        }
+
+        if (existFriendRequest.status !== "PENDING") {
+            throw new Error(`Your friend request is already ${existFriendRequest.status}`)
+        }
+
+        const updatedFriendship = await prisma.friendship.update({
+            where: {
+                id: friendshipId
+            },
+            data: {
+                status: "DECLINED"
+            },
+            include: {
+                sender: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true
+                    }
+                },
+                receiver: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true
+                    }
+                }
+            }
+        })
+
+        return updatedFriendship;
     } catch (error) {
-
+        console.log("Error rejecting friend request", error)
+        throw error
     }
 }
-export async function getPendingFriendRequest() {
+export async function getPendingFriendRequest(userId: string) {
+    if (!userId) throw new Error("no user id found")
     try {
-
+        const existingFriendRequest = await prisma.friendship.findMany({
+            where: {
+                receiverId: userId,
+                status: "PENDING"
+            },
+            include: {
+                sender: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true,
+                        createdAt: true
+                    }
+                }
+            }
+        })
+        return existingFriendRequest;
     } catch (error) {
-
+        console.log("Error getting pending friend requests", error)
+        throw error
     }
 }
 
