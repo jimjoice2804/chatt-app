@@ -415,3 +415,50 @@ export async function getPendingFriendRequest(userId: string) {
     }
 }
 
+
+//post creation handler
+export async function createPost(authorId: string, content: string) {
+    if (!authorId || !content) throw new Error("No id or content present")
+    try {
+        const createdPost = await prisma.posts.create({
+            data: { authorId, content: content.trim() }
+            , include: {
+                author: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true
+                    }
+                }
+            }
+        })
+
+        return createdPost
+    } catch (error) {
+        console.log(`got error creating post`, error)
+        throw error
+    }
+}
+
+//get feel post handler
+export async function getFeedPosts(authorId: string) {
+    if (!authorId) throw new Error("no author id present")
+    try {
+        const getPosts = await prisma.posts.findMany({
+            include: {
+                author: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true
+                    }
+                }
+            }
+        })
+
+        return getPosts;
+    } catch (error) {
+        console.log(`got error getting post`, error)
+        throw error
+    }
+}
