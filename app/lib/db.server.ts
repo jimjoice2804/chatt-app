@@ -462,3 +462,37 @@ export async function getFeedPosts(authorId: string) {
         throw error
     }
 }
+
+export async function saveMessage(senderId: string, receiverId: string, text: string) {
+    if (!senderId || !receiverId || !text) throw new Error("Something is missing in saveMessage")
+    try {
+        const message = await prisma.message.create({
+            data: {
+                senderId,
+                receiverId,
+                content: text.trim()
+            },
+            include: {
+                sender: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true
+                    }
+                },
+                receiver: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true
+                    }
+                }
+            }
+        })
+
+        return message;
+    } catch (error) {
+        console.log("Error saving message to database", error);
+        throw error;
+    }
+}
