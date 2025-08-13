@@ -149,7 +149,8 @@ export const getDirectChatMessages = async (currentUserId: string, friendId: str
             where: {
                 OR: [
                     { senderId: currentUserId, receiverId: friendId },
-                    { receiverId: friendId, senderId: currentUserId }
+
+                    { senderId: friendId, receiverId: currentUserId }
                 ]
             }
             ,

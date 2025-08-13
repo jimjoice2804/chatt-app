@@ -18,7 +18,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (!userData) throw new Error("No user Data");
   //fetching user friends
   const friends = await getUserFriends(user);
-  //fetching user conversation
   //fetch feed
   //fetch current user data
   //fetching all the people accept those who are friends of user
@@ -26,6 +25,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   return {
     friends,
     user: userData,
+    // messages,
   };
 }
 
