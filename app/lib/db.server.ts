@@ -442,8 +442,7 @@ export async function createPost(authorId: string, content: string) {
 }
 
 //get feel post handler
-export async function getFeedPosts(authorId: string) {
-    if (!authorId) throw new Error("no author id present")
+export async function getFeedPosts() {
     try {
         const getPosts = await prisma.posts.findMany({
             include: {

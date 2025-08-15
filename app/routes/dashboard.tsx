@@ -1,6 +1,16 @@
-import { LoaderFunctionArgs, redirect } from "@remix-run/node";
+import {
+  LoaderFunctionArgs,
+  redirect,
+  ActionFunctionArgs,
+} from "@remix-run/node";
 import { getUserId } from "~/lib/session.server";
-import { getUserById, getUserFriends } from "~/lib/db.server";
+import {
+  getUserById,
+  getUserFriends,
+  createPost,
+  getFeedPosts,
+  getAllUsers,
+} from "~/lib/db.server";
 import FriendList from "~/components/dashboard/FriendsList/FriendList";
 import { useLoaderData } from "@remix-run/react";
 import { useState } from "react";
@@ -19,18 +29,53 @@ export async function loader({ request }: LoaderFunctionArgs) {
   //fetching user friends
   const friends = await getUserFriends(user);
   //fetch feed
+  const allFeed = await getFeedPosts();
   //fetch current user data
-  //fetching all the people accept those who are friends of user
+  const newFriends = await getAllUsers(user);
+  //fetching all the people accept who can be the friends of user
 
   return {
     friends,
     user: userData,
-    // messages,
+    allFeed,
+    newFriends,
   };
 }
 
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const formName = formData.get("formName");
+  try {
+    if (formName === "createPost") {
+      const content = formData.get("content");
+
+      if (!content || content.toString().trim() === "") {
+        return {
+          error: "Post content cannot be empty",
+          status: 400,
+        };
+      }
+      const userId = await getUserId(request);
+      if (!userId) {
+        return redirect("/login");
+      }
+
+      await createPost(userId, content.toString());
+
+      return (
+        redirect("/dashboard"),
+        {
+          success: true,
+        }
+      );
+    }
+  } catch (error) {
+    console.error("Action error:", error);
+  }
+}
+
 const Dashboard = () => {
-  const { friends, user } = useLoaderData<typeof loader>();
+  const { friends, user, allFeed } = useLoaderData<typeof loader>();
   const [selectedFriendId, setSelectedFriendId] = useState<string | null>(null);
   return (
     <div>
@@ -54,7 +99,7 @@ const Dashboard = () => {
               onClose={() => setSelectedFriendId(null)}
             />
           ) : (
-            <Feed />
+            <Feed allFeed={allFeed} />
           )}
         </div>
         <div className="bg-sky-500">My Profile section</div>

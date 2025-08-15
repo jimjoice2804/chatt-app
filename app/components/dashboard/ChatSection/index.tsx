@@ -64,7 +64,7 @@ const Chat = ({ friendId, currentId, onClose }: ChatProps) => {
     if (!saveMessages.trim()) return;
 
     if (!socket) return;
-    socket.emit("sendMessage", {
+    socket.emit("sendDirectMessage", {
       content: saveMessages,
       senderId: currentId,
       receiverId: friendId,
