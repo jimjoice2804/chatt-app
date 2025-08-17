@@ -10,8 +10,14 @@ import {
   createPost,
   getFeedPosts,
   getAllUsers,
+  sendFriendRequest,
+  getPendingFriendRequest,
+  acceptFriendRequest,
+  rejectFriendRequest,
 } from "~/lib/db.server";
 import FriendList from "~/components/dashboard/FriendsList/FriendList";
+import NonFriendList from "~/components/dashboard/FriendsList/Non-FriendList";
+import Profile from "~/components/dashboard/Profile";
 import { useLoaderData } from "@remix-run/react";
 import { useState } from "react";
 import Chat from "~/components/dashboard/ChatSection";
@@ -34,11 +40,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const newFriends = await getAllUsers(user);
   //fetching all the people accept who can be the friends of user
 
+  //fetch pending friend requests
+  const pendingRequests = await getPendingFriendRequest(user);
+
   return {
     friends,
     user: userData,
     allFeed,
     newFriends,
+    pendingRequests,
   };
 }
 
@@ -46,6 +56,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const formName = formData.get("formName");
   try {
+    //create post handler
     if (formName === "createPost") {
       const content = formData.get("content");
 
@@ -62,12 +73,54 @@ export async function action({ request }: ActionFunctionArgs) {
 
       await createPost(userId, content.toString());
 
-      return (
-        redirect("/dashboard"),
-        {
-          success: true,
-        }
-      );
+      return redirect("/dashboard");
+    }
+
+    //send friend request handler
+    if (formName === "sendFriendRequest") {
+      const friendId = formData.get("friendId");
+      const senderId = formData.get("senderId");
+      if (!friendId || !senderId) {
+        return {
+          error: "Missing friend or sender ID",
+          status: 400,
+        };
+      }
+      await sendFriendRequest(senderId.toString(), friendId.toString());
+
+      return redirect("/dashboard");
+    }
+
+    //accept friend request handler
+    if (formName === "acceptFriendRequest") {
+      const friendshipId = formData.get("friendshipId");
+      const currentUserId = await getUserId(request);
+
+      if (!friendshipId || !currentUserId) {
+        return {
+          error: "Missing friendship ID or user not authenticated",
+          status: 400,
+        };
+      }
+
+      await acceptFriendRequest(currentUserId, friendshipId.toString());
+      return redirect("/dashboard");
+    }
+
+    //reject friend request handler
+    if (formName === "rejectFriendRequest") {
+      const friendshipId = formData.get("friendshipId");
+      const currentUserId = await getUserId(request);
+
+      if (!friendshipId || !currentUserId) {
+        return {
+          error: "Missing friendship ID or user not authenticated",
+          status: 400,
+        };
+      }
+
+      await rejectFriendRequest(currentUserId, friendshipId.toString());
+      return redirect("/dashboard");
     }
   } catch (error) {
     console.error("Action error:", error);
@@ -88,7 +141,7 @@ const Dashboard = () => {
             />
           </div>
           <div className="bg-slate-100 min-h-[50%]">
-            list of users, to whom im gonna send friend request to
+            <NonFriendList />
           </div>
         </div>
         <div className="bg-sky-900 col-span-2">
@@ -102,7 +155,9 @@ const Dashboard = () => {
             <Feed allFeed={allFeed} />
           )}
         </div>
-        <div className="bg-sky-500">My Profile section</div>
+        <div className="bg-sky-500">
+          <Profile />
+        </div>
       </div>
     </div>
   );
