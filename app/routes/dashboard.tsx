@@ -130,34 +130,138 @@ export async function action({ request }: ActionFunctionArgs) {
 const Dashboard = () => {
   const { friends, user, allFeed } = useLoaderData<typeof loader>();
   const [selectedFriendId, setSelectedFriendId] = useState<string | null>(null);
+  const [selectedFriendName, setSelectedFriendName] = useState<string | null>(
+    null
+  );
+  const [activeTab, setActiveTab] = useState<"feed" | "friends" | "profile">(
+    "feed"
+  );
+
+  const handleSelectFriend = (friendId: string, friendName: string) => {
+    setSelectedFriendId(friendId);
+    setSelectedFriendName(friendName);
+    setActiveTab("feed"); // Switch to main area to show chat
+  };
+
   return (
-    <div>
-      <div className="grid grid-cols-4 min-h-screen">
-        <div className="bg-sky-950 min-h-screen">
-          <div className="bg-slate-500 min-h-[50%]">
-            <FriendList
-              friends={friends}
-              onSelectFriend={setSelectedFriendId}
-            />
+    <div className="min-h-screen bg-gray-100">
+      {/* Mobile Navigation */}
+      <div className="lg:hidden bg-white shadow-sm border-b">
+        <div className="flex justify-around p-2">
+          <button
+            onClick={() => setActiveTab("feed")}
+            className={`flex-1 py-2 px-4 text-center rounded-lg ${
+              activeTab === "feed" ? "bg-blue-500 text-white" : "text-gray-600"
+            }`}
+          >
+            Feed
+          </button>
+          <button
+            onClick={() => setActiveTab("friends")}
+            className={`flex-1 py-2 px-4 text-center rounded-lg ${
+              activeTab === "friends"
+                ? "bg-blue-500 text-white"
+                : "text-gray-600"
+            }`}
+          >
+            Friends
+          </button>
+          <button
+            onClick={() => setActiveTab("profile")}
+            className={`flex-1 py-2 px-4 text-center rounded-lg ${
+              activeTab === "profile"
+                ? "bg-blue-500 text-white"
+                : "text-gray-600"
+            }`}
+          >
+            Profile
+          </button>
+          <a
+            href="/logout"
+            className="flex-1 py-2 px-4 text-center rounded-lg text-red-600 hover:bg-red-50"
+          >
+            Logout
+          </a>
+        </div>
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden lg:grid lg:grid-cols-12 min-h-screen">
+        {/* Left Sidebar - Friends */}
+        <div className="col-span-3 bg-gradient-to-b from-slate-800 to-slate-900 text-white">
+          <div className="h-1/2 border-b border-slate-700">
+            <FriendList friends={friends} onSelectFriend={handleSelectFriend} />
           </div>
-          <div className="bg-slate-100 min-h-[50%]">
+          <div className="h-1/2 bg-slate-700">
             <NonFriendList />
           </div>
         </div>
-        <div className="bg-sky-900 col-span-2">
+
+        {/* Main Content Area */}
+        <div className="col-span-6 bg-gray-50">
           {selectedFriendId ? (
             <Chat
               friendId={selectedFriendId}
+              friendName={selectedFriendName}
               currentId={user.id}
-              onClose={() => setSelectedFriendId(null)}
+              onClose={() => {
+                setSelectedFriendId(null);
+                setSelectedFriendName(null);
+              }}
             />
           ) : (
             <Feed allFeed={allFeed} />
           )}
         </div>
-        <div className="bg-sky-500">
+
+        {/* Right Sidebar - Profile */}
+        <div className="col-span-3 bg-gradient-to-b from-slate-600 to-slate-700">
           <Profile />
         </div>
+      </div>
+
+      {/* Mobile Layout */}
+      <div className="lg:hidden">
+        {activeTab === "feed" && (
+          <div className="min-h-screen">
+            {selectedFriendId ? (
+              <Chat
+                friendId={selectedFriendId}
+                friendName={selectedFriendName}
+                currentId={user.id}
+                onClose={() => {
+                  setSelectedFriendId(null);
+                  setSelectedFriendName(null);
+                }}
+              />
+            ) : (
+              <Feed allFeed={allFeed} />
+            )}
+          </div>
+        )}
+
+        {activeTab === "friends" && (
+          <div className="min-h-screen bg-gradient-to-b from-slate-800 to-slate-900">
+            <div className="p-4">
+              <FriendList
+                friends={friends}
+                onSelectFriend={(friendId, friendName) => {
+                  handleSelectFriend(friendId, friendName);
+                  setActiveTab("feed");
+                }}
+              />
+            </div>
+            <div className="p-4 bg-slate-700">
+              <NonFriendList />
+            </div>
+          </div>
+        )}
+
+        {activeTab === "profile" && (
+          <div className="min-h-screen bg-gradient-to-b from-slate-600 to-slate-700">
+            <Profile />
+          </div>
+        )}
       </div>
     </div>
   );

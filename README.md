@@ -1,13 +1,33 @@
-# Welcome to Remix!
+# Chat App
 
-- 📖 [Remix docs](https://remix.run/docs)
+A modern real-time chat application with social features built with Remix, Socket.IO, and Prisma.
+
+## Features
+
+- � User authentication with secure sessions
+- 💬 Real-time messaging with Socket.IO
+- 👫 Friend management system (add, accept, reject)
+- 📱 Responsive design for desktop and mobile
+- 📝 Social feed for posts
+- 🔄 Typing indicators
+- 🔔 Unread message notifications
 
 ## Development
 
-Run the dev server:
+To run the full development environment (both Remix app and Socket.IO server):
 
 ```sh
+npm run dev:all
+```
+
+Alternatively, run each separately:
+
+```sh
+# Remix app
 npm run dev
+
+# Socket.IO server
+npm run socket
 ```
 
 ## Deployment

@@ -5,6 +5,7 @@ interface User {
     id: string;
     username: string;
     room?: string;
+    isTyping?: Record<string, boolean>; // Track typing status per conversationId
 }
 
 // Track connected users
@@ -15,9 +16,12 @@ export const setupSocketHandlers = (io: Server) => {
         console.log(`New connection: ${socket.id}`);
 
         socket.on('register', ({ userId, username }: { userId: string, username: string }) => {
-            users.set(socket.id, { id: userId, username });
+            users.set(socket.id, { id: userId, username, isTyping: {} });
             console.log(`User registered: ${username} (${userId})`);
-            io.emit('onlineUsers', Array.from(users.values()));
+            io.emit('onlineUsers', Array.from(users.values()).map(user => ({
+                id: user.id,
+                username: user.username
+            })));
         });
 
 
@@ -45,13 +49,35 @@ export const setupSocketHandlers = (io: Server) => {
         })
 
         // Handle disconnection
+        // Handle typing indicator
+        socket.on('typing', ({ receiverId, isTyping }: { receiverId: string, isTyping: boolean }) => {
+            const sender = users.get(socket.id);
+            if (!sender) return;
+
+            // Update typing status
+            if (!sender.isTyping) sender.isTyping = {};
+            sender.isTyping[receiverId] = isTyping;
+
+            // Notify the receiver
+            const receiverSocketId = findSocketByUserId(receiverId);
+            if (receiverSocketId) {
+                io.to(receiverSocketId).emit('userTyping', {
+                    userId: sender.id,
+                    isTyping
+                });
+            }
+        });
+
         socket.on('disconnect', () => {
             const user = users.get(socket.id);
             if (user) {
                 console.log(`User disconnected: ${user.username}`);
 
                 users.delete(socket.id);
-                io.emit('userList', Array.from(users.values()));
+                io.emit('onlineUsers', Array.from(users.values()).map(user => ({
+                    id: user.id,
+                    username: user.username
+                })));
             }
         });
     });

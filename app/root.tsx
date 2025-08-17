@@ -40,6 +40,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { ToastProvider } from "./components/ui/ToastContext";
+import { UnreadMessagesProvider } from "./components/ui/UnreadMessagesContext";
+
 export default function App() {
-  return <Outlet />;
+  return (
+    <ToastProvider>
+      <UnreadMessagesProvider>
+        <Outlet />
+      </UnreadMessagesProvider>
+    </ToastProvider>
+  );
 }

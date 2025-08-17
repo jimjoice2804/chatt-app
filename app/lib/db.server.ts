@@ -171,7 +171,7 @@ export const getDirectChatMessages = async (currentUserId: string, friendId: str
                 }
             },
             orderBy: {
-                createdAt: "desc"
+                createdAt: "asc"
             }
         })
         return messages
